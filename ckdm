@@ -1,0 +1,95 @@
+#!/usr/bin/php
+<?php
+/**
+ * User: zxtian
+ * Date: 2020-06-18
+ * Time: 15:29
+ *
+ *
+ *
+ */
+
+$ckApi = 'https://checkapi.aliyun.com/check/checkdomain';
+$token = 'Y20f015c1305985665c06ce037b32e89d';
+$query = [
+    'domain' => '',
+    'command' => '',
+    'token' => $token,
+    'ua' => '',
+    'currency' => '',
+    'site' => '',
+    'bid' => '',
+    '_csrf_token' => '',
+    'callback' => '',
+];
+
+define('DOMAIN_NOT_REGISTER', 1);
+define('OUT_FILE', $argv[1] ?? 'ckdm'.date("YmdH"));
+if(file_exists(OUT_FILE)){
+    (is_file(OUT_FILE) OR die('OutFile is not a file.'));
+}else{
+    $dir = dirname(OUT_FILE);
+    file_exists($dir) OR mkdir($dir,0777,true);
+    (touch(OUT_FILE) OR die('OutFile create failed!!!'));
+}
+
+//jsonp_1592466348159_49720
+$sleep = 10; // 睡眠秒数，范围内随机
+$wtlen = 4; // 想要的长度
+$sufix = ['cn', 'com', 'icu']; // 想要的后缀
+$chars = "abcdefghigklmnopqrstuvwxyz";
+$charr = str_split($chars);
+
+function ms(Array $charr, $i)
+{
+    $k = array_rand($charr);
+    $v = $charr[$k];
+    --$i && ($v .= ms($charr, $i));
+
+    return $v;
+}
+
+function cbstr()
+{
+    $s = 'jsonp';
+    $s .= '_' . substr(str_replace('.', '', microtime(1)), 0, 13);
+    $s .= '_' . rand(10000, 99999);
+
+    return $s;
+}
+
+function logln($file, $msg)
+{
+    is_array($msg) && $msg = json_encode($msg, JSON_UNESCAPED_UNICODE);
+    file_put_contents(OUT_DIR . DIRECTORY_SEPARATOR . $file, $msg . date(' Y-m-d H:i:s ') . PHP_EOL, FILE_APPEND);
+    // echo $msg . date(' Y-m-d H:i:s ') . PHP_EOL;
+}
+
+function rtana($cbstr, $restr)
+{
+    $restr = trim(str_replace($cbstr, '', $restr), '();');
+    echo $restr.PHP_EOL;
+    $array = json_decode($restr, true);
+    if (empty($array) || empty($array['module']) || empty($array['module'][0])) {
+        // Todo:// 没有正确的返回，不确定是啥原因
+        return;
+    }
+    $result = $array['module'][0];
+    // 这里有几种状态都是真，
+    if ($result['avail'] === DOMAIN_NOT_REGISTER) {
+        logln(DOMAIN_NOT_REGISTER_OUT, $result);
+    }
+}
+
+while (true){
+    $dostr = ms($charr, $wtlen);
+    foreach ($sufix as $sx) {
+        $query['domain'] = $dostr . '.' . $sx;
+        $query['callback'] = cbstr();
+        $qsstr = http_build_query($query);
+        $ckurl = $ckApi . '?' . $qsstr;
+        $restr = file_get_contents($ckurl);
+        rtana($query['callback'], $restr);
+        sleep(rand(0,$sleep));
+    }
+}

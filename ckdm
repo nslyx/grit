@@ -61,7 +61,7 @@ function cbstr()
 function logln($file, $msg)
 {
     is_array($msg) && $msg = json_encode($msg, JSON_UNESCAPED_UNICODE);
-    file_put_contents(OUT_DIR . DIRECTORY_SEPARATOR . $file, $msg . date(' Y-m-d H:i:s ') . PHP_EOL, FILE_APPEND);
+    file_put_contents($file, $msg . date(' Y-m-d H:i:s ') . PHP_EOL, FILE_APPEND);
     // echo $msg . date(' Y-m-d H:i:s ') . PHP_EOL;
 }
 
@@ -77,7 +77,7 @@ function rtana($cbstr, $restr)
     $result = $array['module'][0];
     // 这里有几种状态都是真，
     if ($result['avail'] === DOMAIN_NOT_REGISTER) {
-        logln(DOMAIN_NOT_REGISTER_OUT, $result);
+        logln(OUT_FILE, $result);
     }
 }
 
